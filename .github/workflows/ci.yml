@@ -20,12 +20,12 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.12'
+          python-version: '3.14'
           cache: pip
           cache-dependency-path: |
             requirements.txt
             requirements-dev.txt
-      # Python tests use bundled GDAL; the CLI call is mocked. (Python 테스트는 내장 GDAL을 쓰며 CLI 호출은 모의 실행합니다.)
+      # Python tests use bundled GDAL; the CLI call is mocked.
       - name: Install dependencies
         run: python -m pip install -r requirements-dev.txt
       - name: Lint
