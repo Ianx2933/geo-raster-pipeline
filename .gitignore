@@ -5,3 +5,9 @@ data/*.aux.xml
 tiles/
 __pycache__/
 data/*.gpkg
+
+.pytest_cache/
+.ruff_cache/
+.env
+
+seoul.qgz

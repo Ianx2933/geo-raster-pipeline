@@ -1,4 +1,4 @@
-"""Write sampled slope and elevation back into the transit stop table."""
+"""Write terrain values to the stop table."""
 
 import os
 
@@ -15,7 +15,7 @@ print(f"{len(gdf)} rows read from {SRC}")
 
 engine = create_engine(DB_URL)
 
-# staging table, then a single UPDATE join — avoids row-by-row writes
+# Stage then update in one join.
 gdf[["node_id", "elev_m", "slope_pct"]].to_sql(
     "stop_terrain_staging", engine, if_exists="replace", index=False
 )

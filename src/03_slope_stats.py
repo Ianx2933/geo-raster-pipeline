@@ -1,4 +1,4 @@
-"""Sample slope and elevation at each Seoul bus stop and summarise the result."""
+"""Sample slope and elevation at Seoul stops."""
 
 import os
 
@@ -9,7 +9,7 @@ import pandas as pd
 import rasterio
 from sqlalchemy import create_engine
 
-DB_URL = os.environ["SEOUL_TRANSIT_DB"]      # set this before running
+DB_URL = os.environ["SEOUL_TRANSIT_DB"]      # Set before running.
 DEM = "data/dem_3857.tif"
 SLOPE = "data/slope.tif"
 SLOPE_RAW = "data/slope_uncorrected.tif"
