@@ -159,19 +159,23 @@ infrastructure, and vegetation. In a dense city a stop that falls near a tall
 building's edge can inherit that structure's height difference as terrain slope.
 
 The ten steepest stops were checked individually against terrain and imagery.
-Most sit on genuine hillside roads — the steepest, at 60.2%, is on the approach
-to Bukhansan, directly below a cliff face, with contour lines visibly bunched
-around it. At least one, in a flat commercial district, is likely a building
-artefact.
+All ten sit on genuine hillside roads. The steepest, at 60.2%, is on the
+approach to Bukhansan, directly below a cliff face, with contour lines visibly
+bunched around it. One that reads as flat commercial district on a basemap —
+the Posco intersection — turned out to have substantial rising ground directly
+behind it. No building artefacts were found among them.
 
-Building artefacts push the figure up, so the count is probably overstated in
-dense districts. But the error does not run in one direction only: at 30 m
-resolution a short, steep pitch between two flatter stretches is averaged away,
-which pushes the figure down. The two effects are not measured here and do not
-obviously cancel, so 39.5% is best treated as an estimate of uncertain sign
-rather than a bound in either direction. A bare-earth DTM — Korea's national
-5 m 수치표고모델 is the obvious candidate — would resolve the first problem and
-narrow the second.
+Ten stops out of 11,480 is not a sample that settles the question, and the
+concern remains structurally valid: a surface model can register a building
+edge as terrain. But the check gives no evidence that it is happening at the
+top of the distribution, which is where it would matter most.
+
+Resolution, by contrast, does bias in one direction: at 30 m a short,
+steep pitch between two flatter stretches is averaged away, which pushes the
+figure down. On the evidence here, 39.5% is more likely an undercount than an
+overcount — though that rests on ten checks, not a systematic validation. A
+bare-earth DTM — Korea's national 5 m 수치표고모델 is the obvious candidate —
+would settle both questions.
 
 A second, separate limitation: at 30 m resolution, slope describes the terrain
 gradient across the pixel containing a stop, not the gradient a passenger stands
