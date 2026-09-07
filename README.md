@@ -6,6 +6,11 @@ validated Cloud Optimized GeoTIFF, derives elevation isolines to GeoPackage,
 generates XYZ terrain tiles, and joins slope statistics against 11,480 transit
 stop geometries held in PostGIS.
 
+The output is not a one-off analysis. It is published as an immutable, versioned
+snapshot and served through the
+[SeoulTransitPlatform](https://github.com/Ianx2933/SeoulTransitPlatform) API —
+see [Publication](#publication) below.
+
 ![Bus stops over terrain](docs/stops_over_dem.png)
 
 *Seoul bus stops (white) over the reprojected DEM. Stops trace the road network
@@ -16,9 +21,8 @@ south-west.*
 
 ## Result
 
-Of **11,480 Seoul bus stops**, **4,536 (39.5%)** sit on terrain steeper than an
-8% grade — the threshold above which a slope stops being wheelchair-accessible
-under most accessibility standards. Median grade across all stops is 6.51%.
+Of **11,480 Seoul bus stops**, **4,536 (39.5%)** sit on terrain at or above an
+8% grade. Median grade across all stops is 6.51%.
 
 The same calculation **without correcting for Web Mercator scale distortion
 returns 3,279 stops (28.6%)** — an undercount of 28%. That gap is the whole
@@ -26,11 +30,24 @@ argument for understanding the projection you are working in, and it is
 discussed under [Web Mercator scale correction](#web-mercator-scale-correction)
 below.
 
+Aggregated by administrative dong, the distribution is far from uniform. The
+most affected dong is **Seonghyeon-dong (성현동), where 27 of 29 stops (93.1%)
+are at or above 8%** — a small sample, but one that matches the terrain: the
+dong sits on hillside. City-wide the figure is 39.5%; per-dong it ranges from
+near zero on the Han River floodplain to over ninety percent on the slopes.
+
 ![Slope classified stops over hillshade](docs/slope_vs_stops.png)
 
-*Stops above 8% grade in red, at or below in white, over a hillshade of the same
+*Stops at or above 8% grade in red, below in white, over a hillshade of the same
 DEM. The steep stops are not confined to the mountain fringes: central districts
 carry them throughout.*
+
+**What this figure is and is not.** It measures terrain gradient across the 30 m
+DEM cell containing each stop. It is not a measurement of footway gradient, and
+it is not an accessibility assessment. Read it as a screening indicator that
+narrows down where to survey, not as a verdict on any individual stop. The
+[limitations](#known-limitation-dsm-not-dtm) below are part of the result, not a
+footnote to it.
 
 ---
 
@@ -44,6 +61,7 @@ carry them throughout.*
 | 4. Contours to GeoPackage | `src/02_contours.py` | 19,653 lines, 50–1500 m |
 | 5. XYZ terrain tiles | `gdal2tiles` | 1,934 tiles, zoom 8–13 |
 | 6. Slope stats joined to stops | `src/03_slope_stats.py` | 11,480 stops, GPKG + CSV |
+| 7. Publish as a versioned snapshot | SeoulTransitPlatform | `glo30-20260907` |
 
 ### Data
 
@@ -55,6 +73,34 @@ carry them throughout.*
   [SeoulTransitPlatform](https://github.com/Ianx2933/SeoulTransitPlatform),
   a PostGIS database of Seoul public transport data. 11,480 point geometries,
   EPSG:4326, all populated.
+
+---
+
+## Publication
+
+Step 6 produces a GeoPackage and a CSV. Those are analysis artefacts; they are
+not what the API serves.
+
+The results are published into SeoulTransitPlatform as a **versioned, immutable
+snapshot** rather than written onto the stop master table. Three reasons:
+
+- `bus_stop_location` is periodically reloaded from the source CSV. A derived
+  column stored there is destroyed by the next reload, and nothing raises an
+  error — the API keeps returning 200 while the values quietly empty out.
+- Assigning stops to administrative dongs at query time multiplies rows: a stop
+  on a shared boundary edge matches both polygons. The assignment is resolved
+  once at publication and stored one row per stop.
+- Without a version, there is no way to tell which DEM and which boundary
+  vintage produced a given number.
+
+The snapshot records its provenance — source DEM, slope method including the
+scale factor, boundary base date, and per-category stop counts — and the API
+echoes it on every response. Dataset `glo30-20260907` was published from the
+`gdaldem slope -p -s 0.7934` output against the `20250630` boundary release.
+
+Publication, schema and the serving API live in the SeoulTransitPlatform
+repository under `pipelines/terrain/`, `database/terrain/` and
+`services/api-server/.../terrain/`.
 
 ---
 
@@ -92,6 +138,11 @@ gdaldem slope dem_3857.tif slope.tif -p -s 0.7934    # cos(37.5°)
 Both the corrected and uncorrected rasters are sampled, and the pipeline reports
 both figures. The difference is not marginal: 4,536 stops against 3,279.
 
+The correction uses a single latitude constant for the whole extent. Across the
+one-degree band covered here the scale factor varies by roughly 2%, which is
+small next to the 26% distortion being corrected, but it is an approximation
+rather than a per-pixel correction.
+
 ### NoData
 
 Copernicus GLO-30 has no NoData value set — ocean is stored as elevation 0
@@ -113,14 +164,21 @@ to Bukhansan, directly below a cliff face, with contour lines visibly bunched
 around it. At least one, in a flat commercial district, is likely a building
 artefact.
 
-The 39.5% figure should therefore be read as an upper bound. A bare-earth DTM —
-Korea's national 5 m 수치표고모델 is the obvious candidate — would settle it.
+Building artefacts push the figure up, so the count is probably overstated in
+dense districts. But the error does not run in one direction only: at 30 m
+resolution a short, steep pitch between two flatter stretches is averaged away,
+which pushes the figure down. The two effects are not measured here and do not
+obviously cancel, so 39.5% is best treated as an estimate of uncertain sign
+rather than a bound in either direction. A bare-earth DTM — Korea's national
+5 m 수치표고모델 is the obvious candidate — would resolve the first problem and
+narrow the second.
 
 A second, separate limitation: at 30 m resolution, slope describes the terrain
 gradient across the pixel containing a stop, not the gradient a passenger stands
-on. A stop on level pavement beside a steep drop registers as steep. For
-accessibility purposes this is arguably the more useful reading — reaching the
-stop still means crossing the slope — but it is not the same measurement.
+on. A stop on level pavement beside a steep drop registers as steep. For a
+screening indicator this is arguably the more useful reading — reaching the stop
+still means crossing the slope — but it is not the same measurement, and it is
+not what an accessibility standard specifies.
 
 ### Environment
 
@@ -176,6 +234,15 @@ gdal2tiles -z 8-13 --xyz -x --processes 4 data/hillshade.tif tiles/
 # 6. join to PostGIS
 export SEOUL_TRANSIT_DB="postgresql+psycopg2://user:pass@localhost:5432/Seoul_Transit"
 python src/03_slope_stats.py
+```
+
+Step 7 (publication) runs from the SeoulTransitPlatform repository:
+
+```bash
+python pipelines/terrain/publish_terrain.py --csv <step 6 output> --dry-run \
+    --dataset-id glo30-20260907 --source-id copernicus-glo30 \
+    --slope-method "gdaldem slope -p -s 0.7934" --boundary-date 20250630 \
+    --expected-stops 11480 --expected-at-least 4536
 ```
 
 Raster outputs and the tile pyramid are not committed; the scripts regenerate

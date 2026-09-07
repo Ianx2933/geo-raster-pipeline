@@ -4,3 +4,4 @@ data/*.vrt
 data/*.aux.xml
 tiles/
 __pycache__/
+data/*.gpkg
