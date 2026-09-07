@@ -1,0 +1,6 @@
+.venv/
+data/*.tif
+data/*.vrt
+data/*.aux.xml
+tiles/
+__pycache__/
